@@ -1,1 +1,14 @@
-# not implemented yet
+version: "3"
+services:
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6397:6397"
+  elasticmq:
+    image: "softwaremill/elasticmq"
+    ports:
+      - "9324:9324"
+  webhook.me:
+    image: "captain-hook"
+    ports:
+      - "3000:3000"
