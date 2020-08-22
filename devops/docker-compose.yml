@@ -1,14 +1,30 @@
 version: "3"
 services:
   redis:
-    image: "redis:alpine"
+    container_name: "redis"
+    image: "redis"
     ports:
       - "6397:6397"
+    expose:
+      - 6379
+
   elasticmq:
+    container_name: "elasticmq"
     image: "softwaremill/elasticmq"
+    volumes:
+      - ./elasticmq.conf:/opt/elasticmq.conf
     ports:
       - "9324:9324"
+    expose:
+      - 9324
+
   webhook.me:
+    container_name: "webhook.me"
     image: "captain-hook"
     ports:
       - "3000:3000"
+    expose:
+      - 3000
+    depends_on:
+      - elasticmq
+      - redis

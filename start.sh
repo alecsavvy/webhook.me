@@ -3,13 +3,15 @@
 # exit when any command fails
 set -e
 
-cd server
+# remove dangling images
+docker system prune
 
 # build webhook.me
+cd server
 docker build -t captain-hook .
 
 cd ..
-cd devops
 
 # run all services in docker
+cd devops
 docker-compose up
