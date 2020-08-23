@@ -1,6 +1,6 @@
-use crate::api::common::Status;
 use crate::app_data::AppData;
-use crate::cache::save_request;
+use crate::cache::write::save_request;
+use crate::models::request::Request;
 use crate::queue::operations::push_message;
 use actix_web::{
     error, post,
@@ -27,7 +27,7 @@ pub struct SubscribeRequest {
 pub async fn subscribe(
     app_data: Data<Mutex<AppData>>,
     data: Json<SubscribeRequest>,
-) -> Result<Json<Status>> {
+) -> Result<Json<Request>> {
     let app_data = app_data.lock().expect("could not obtain lock on app data");
     // TODO: add header support
     let data = get(&data.endpoint)
@@ -49,7 +49,7 @@ pub async fn subscribe(
         .await
         .ok_or(error::ErrorBadRequest("could not push message to SQS"))?;
 
-    let res = Status {
+    let res = Request {
         data: data.clone(),
         request_id,
         sqs_message_id,

@@ -7,6 +7,7 @@ mod api;
 mod app_data;
 mod cache;
 mod config;
+mod models;
 mod queue;
 
 #[actix_rt::main]

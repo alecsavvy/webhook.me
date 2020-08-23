@@ -1,6 +1,6 @@
-use crate::api::common::Status;
 use crate::app_data::AppData;
-use crate::cache::read_request;
+use crate::cache::read::read_request;
+use crate::models::request::Request;
 use actix_web::{
     error, get,
     web::{Data, Json, Path},
@@ -13,12 +13,12 @@ use uuid::Uuid;
 pub async fn status(
     app_data: Data<Mutex<AppData>>,
     request_id: Path<Uuid>,
-) -> Result<Json<Status>> {
+) -> Result<Json<Request>> {
     let app_data = app_data.lock().expect("could not obtain lock on app data");
     let request = read_request(&app_data.cache, request_id.clone())
         .await
         .map_err(|_| error::ErrorBadRequest("could not find that request"))?;
-    let res = Status {
+    let res = Request {
         request_id: request_id.clone(),
         data: request,
         sqs_message_id: "".into(), // not sure how to include this yet
