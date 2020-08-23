@@ -3,5 +3,5 @@ use rusoto_sqs::SqsClient;
 
 pub struct AppData {
     pub sqs: SqsClient,
-    pub redis: ConnectionPool,
+    pub cache: ConnectionPool,
 }

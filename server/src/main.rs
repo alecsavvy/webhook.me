@@ -16,14 +16,11 @@ async fn main() -> Result<()> {
         .await
         .expect("could not connect to redis");
 
-    let sqs_client = queue::create_client();
+    let sqs = queue::create_client();
     let req = rusoto_sqs::ListQueuesRequest::default();
-    let queues = sqs_client.list_queues(req).await;
+    let queues = sqs.list_queues(req).await;
 
-    let shared_data = app_data::AppData {
-        sqs: sqs_client,
-        redis: cache,
-    };
+    let shared_data = app_data::AppData { sqs, cache };
     let shared_data = Data::new(Mutex::new(shared_data));
 
     // TODO: poll elastic mq until service is up
