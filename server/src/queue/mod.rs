@@ -1,10 +1,13 @@
-use crate::config::{SQS_ACCESS_KEY, SQS_PRIVATE_ACCESS_KEY, SQS_URL};
+use crate::config::{SQS_ACCESS_KEY, SQS_PRIVATE_ACCESS_KEY, SQS_QUEUE_NAME, SQS_URL};
 use rusoto_core::credential::StaticProvider;
 use rusoto_core::request::HttpClient;
+use rusoto_sqs::Sqs;
 use rusoto_sqs::SqsClient;
 
+pub mod operations;
+
 // TODO: add await to retry connection
-pub fn create_client() -> SqsClient {
+pub async fn create_client() -> (SqsClient, String) {
     // gather aws credentials
     let provider = StaticProvider::new_minimal(
         SQS_ACCESS_KEY.to_string(),
@@ -16,9 +19,26 @@ pub fn create_client() -> SqsClient {
         name: "local_sqs".to_owned(),
         endpoint: SQS_URL.to_string(),
     };
-    SqsClient::new_with(
+    let client = SqsClient::new_with(
         HttpClient::new().expect("couldnt make http client 🤷‍♀️"),
         provider,
         region,
-    )
+    );
+
+    let create_queue = rusoto_sqs::CreateQueueRequest {
+        queue_name: SQS_QUEUE_NAME.to_string(),
+        attributes: None,
+        tags: None,
+    };
+
+    let queue = client
+        .create_queue(create_queue)
+        .await
+        .expect("could not create default queue");
+
+    let queue_url = queue
+        .queue_url
+        .expect("how could we make a queue with no url?");
+
+    (client, queue_url)
 }

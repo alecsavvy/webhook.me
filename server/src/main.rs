@@ -1,5 +1,4 @@
 use actix_web::{web::Data, App, HttpServer};
-use rusoto_sqs::Sqs;
 use std::io::Result;
 use std::sync::Mutex;
 
@@ -16,15 +15,14 @@ async fn main() -> Result<()> {
         .await
         .expect("could not connect to redis");
 
-    let sqs = queue::create_client();
-    let req = rusoto_sqs::ListQueuesRequest::default();
-    let queues = sqs.list_queues(req).await;
+    let (sqs, queue_url) = queue::create_client().await;
 
-    let shared_data = app_data::AppData { sqs, cache };
+    let shared_data = app_data::AppData {
+        sqs,
+        cache,
+        queue_url,
+    };
     let shared_data = Data::new(Mutex::new(shared_data));
-
-    // TODO: poll elastic mq until service is up
-    println!("queues: {:?}", queues);
 
     HttpServer::new(move || {
         App::new()

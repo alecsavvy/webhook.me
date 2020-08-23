@@ -1,6 +1,7 @@
 use crate::api::common::Status;
 use crate::app_data::AppData;
 use crate::cache::save_request;
+use crate::queue::operations::push_message;
 use actix_web::{
     error, post,
     web::{Data, Json},
@@ -27,9 +28,8 @@ pub async fn subscribe(
     app_data: Data<Mutex<AppData>>,
     data: Json<SubscribeRequest>,
 ) -> Result<Json<Status>> {
-    let app_data = app_data.lock().unwrap();
+    let app_data = app_data.lock().expect("could not obtain lock on app data");
     // TODO: add header support
-    // only support for GET requests
     let data = get(&data.endpoint)
         .await
         .map_err(|_| error::ErrorBadRequest("something blew up"))?
@@ -39,14 +39,20 @@ pub async fn subscribe(
 
     let request_id = Uuid::new_v4();
 
+    // save in redis
     save_request(&app_data.cache, request_id, data.clone())
         .await
         .map_err(|_| error::ErrorBadRequest("could not save in redis"))?;
+
+    // push to sqs
+    let sqs_message_id = push_message(&app_data.sqs, &app_data.queue_url, data.clone())
+        .await
+        .ok_or(error::ErrorBadRequest("could not push message to SQS"))?;
+
     let res = Status {
         data: data.clone(),
         request_id,
+        sqs_message_id,
     };
-    // TODO: queue request in sqs
-    // TODO: add response payload that's more than body
     Ok(Json(res))
 }

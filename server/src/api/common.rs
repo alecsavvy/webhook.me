@@ -5,4 +5,5 @@ use uuid::Uuid;
 pub struct Status {
     pub data: String, // this could be any structure
     pub request_id: Uuid,
+    pub sqs_message_id: String,
 }
