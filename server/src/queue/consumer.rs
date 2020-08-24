@@ -21,13 +21,24 @@ pub async fn consumer() {
         time::interval(Duration::from_secs(SQS_CONSUMER_INTERVAL))
             .next()
             .await;
-        let request_id = get_message(&sqs, &queue_url)
-            .await
-            .expect("could not get message");
+
+        // handle this in a result
+        let request_id = get_message(&sqs, &queue_url).await;
+
+        if request_id.is_none() {
+            println!("didn't find any messages");
+            continue;
+        }
+        let request_id = request_id.unwrap();
 
         println!("got message! {}", request_id);
 
-        let request = read_request(&cache, request_id).await.unwrap();
+        let request = read_request(&cache, request_id).await.ok();
+        if request.is_none() {
+            println!("could not find request in cache");
+            continue;
+        }
+        let request = request.unwrap();
         let endpoint = request.endpoint.clone();
         let body = check_data(&request).await;
         let _ = callback(endpoint, body);
