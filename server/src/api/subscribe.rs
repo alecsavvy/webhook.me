@@ -30,6 +30,8 @@ pub async fn subscribe(
 ) -> Result<Json<Request>> {
     let app_data = app_data.lock().expect("could not obtain lock on app data");
     // TODO: add header support
+    let endpoint = &data.endpoint;
+    let callback = &data.callback;
     let data = get(&data.endpoint)
         .await
         .map_err(|_| error::ErrorBadRequest("something blew up"))?
@@ -39,13 +41,8 @@ pub async fn subscribe(
 
     let request_id = Uuid::new_v4();
 
-    // save in redis
-    save_request(&app_data.cache, request_id, data.clone())
-        .await
-        .map_err(|_| error::ErrorBadRequest("could not save in redis"))?;
-
     // push to sqs
-    let sqs_message_id = push_message(&app_data.sqs, &app_data.queue_url, data.clone())
+    let sqs_message_id = push_message(&app_data.sqs, &app_data.queue_url, request_id)
         .await
         .ok_or(error::ErrorBadRequest("could not push message to SQS"))?;
 
@@ -53,6 +50,14 @@ pub async fn subscribe(
         data: data.clone(),
         request_id,
         sqs_message_id,
+        endpoint: endpoint.to_string(),
+        callback: callback.to_string(),
     };
+
+    // save in redis
+    save_request(&app_data.cache, request_id, &res)
+        .await
+        .map_err(|_| error::ErrorBadRequest("could not save in redis"))?;
+
     Ok(Json(res))
 }

@@ -1,7 +1,5 @@
 use crate::config::REDIS_URL;
-use darkredis::{ConnectionPool, Error, Result};
-use std::str::from_utf8;
-use uuid::Uuid;
+use darkredis::{ConnectionPool, Result};
 
 pub mod read;
 pub mod write;

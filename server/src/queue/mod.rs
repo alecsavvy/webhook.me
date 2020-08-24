@@ -1,9 +1,14 @@
-use crate::config::{SQS_ACCESS_KEY, SQS_PRIVATE_ACCESS_KEY, SQS_QUEUE_NAME, SQS_URL};
+use crate::config::{
+    SQS_ACCESS_KEY, SQS_PRIVATE_ACCESS_KEY, SQS_QUEUE_NAME, SQS_URL, SQS_WARMUP_DELAY,
+};
 use rusoto_core::credential::StaticProvider;
 use rusoto_core::request::HttpClient;
 use rusoto_sqs::Sqs;
 use rusoto_sqs::SqsClient;
+use std::time::Duration;
+use tokio::time::delay_for;
 
+pub mod consumer;
 pub mod operations;
 
 // TODO: add await to retry connection
@@ -24,6 +29,9 @@ pub async fn create_client() -> (SqsClient, String) {
         provider,
         region,
     );
+
+    // elastic mq takes a minute to start up, temporary solution
+    delay_for(Duration::from_secs(SQS_WARMUP_DELAY)).await;
 
     let create_queue = rusoto_sqs::CreateQueueRequest {
         queue_name: SQS_QUEUE_NAME.to_string(),
